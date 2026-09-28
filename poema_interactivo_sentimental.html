@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lo que no dijimos</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;min-height:100vh;overflow:hidden;
+ background:radial-gradient(circle at 50% 38%,#30273d 0%,#12101b 48%,#06060a 100%);
+ color:#f4edf7;font-family:Georgia,"Times New Roman",serif
+}
+body:after{content:"";position:fixed;inset:0;background:radial-gradient(circle,transparent 45%,rgba(0,0,0,.45));pointer-events:none}
+.stars{position:fixed;inset:0;pointer-events:none}
+.star{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;opacity:.3;animation:twinkle 4s infinite}
+@keyframes twinkle{0%,100%{opacity:.12}50%{opacity:.75}}
+.wrap{height:100vh;display:flex;align-items:center;justify-content:center;padding:30px;text-align:center}
+.card{max-width:820px;width:100%;position:relative}
+.title{font-size:13px;letter-spacing:6px;text-transform:uppercase;opacity:.42;margin-bottom:50px}
+#line{min-height:190px;display:flex;align-items:center;justify-content:center;font-size:clamp(25px,5vw,48px);line-height:1.35;text-shadow:0 0 30px rgba(231,211,255,.16)}
+.fade{animation:appear 1.9s cubic-bezier(.2,.7,.2,1) both}
+@keyframes appear{from{opacity:0;transform:translateY(22px);filter:blur(7px)}to{opacity:1;transform:none;filter:blur(0)}}
+.controls{position:fixed;bottom:35px;left:0;right:0;display:flex;justify-content:center;gap:10px}
+button{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#fff;border-radius:999px;padding:12px 20px;cursor:pointer;backdrop-filter:blur(10px);font-size:14px}
+button:hover{background:rgba(255,255,255,.13)}
+.hint{position:fixed;bottom:87px;left:0;right:0;text-align:center;font:11px Arial,sans-serif;letter-spacing:.5px;opacity:.35}
+.progress{position:fixed;top:0;left:0;height:2px;background:#eadcf5;width:0%;transition:width .8s}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div><div class="progress" id="progress"></div>
+<main class="wrap"><section class="card">
+<div class="title">Lo que no dijimos</div>
+<div id="line">Toca «Comenzar» y deja que el poema aparezca.</div>
+</section></main>
+<div class="hint">Usa audífonos para escucharlo mejor</div>
+<div class="controls">
+<button id="start">Comenzar ✦</button>
+<button id="next" style="display:none">Siguiente →</button>
+<button id="music" style="display:none">♫ Música</button>
+</div>
+
+<script>
+const poema=[
+"Hay cosas que nunca aprendemos a decir.",
+"Palabras que se quedan atrapadas en la garganta,",
+"porque a veces sentimos demasiado",
+"y no sabemos cómo explicarlo.",
+"Hay personas que llegan sin avisar",
+"y terminan dejando una parte de ellas en nosotros.",
+"Se quedan en una canción,",
+"en una fotografía,",
+"en un lugar al que ya no volvemos,",
+"pero que todavía recordamos como si fuera ayer.",
+"Y qué extraño es extrañar,",
+"porque nadie te enseña qué hacer con una ausencia.",
+"Uno simplemente aprende a convivir con ella,",
+"a sonreír aunque algo duela un poco,",
+"a seguir caminando aunque una parte de ti",
+"todavía quisiera quedarse.",
+"Quizá por eso guardamos tantas cosas.",
+"Conversaciones que nunca tuvimos,",
+"abrazos que dejamos para después,",
+"y sentimientos que escondimos",
+"por miedo a decirlos demasiado tarde.",
+"Pero si pudiera volver a algún momento,",
+"no cambiaría todo lo que pasó.",
+"Solo diría aquello que tantas veces callé:",
+"que algunas personas no se olvidan,",
+"solo aprendemos a recordarlas de otra manera.",
+"Y que, aunque el tiempo siga pasando,",
+"hay cosas que no necesitan quedarse para siempre",
+"para haber significado muchísimo.",
+"Porque a veces alguien pasa por nuestra vida",
+"y, sin darse cuenta,",
+"nos cambia para siempre."
+];
+
+const line=document.getElementById("line"),start=document.getElementById("start"),next=document.getElementById("next"),musicBtn=document.getElementById("music"),progress=document.getElementById("progress");
+let i=-1,audioCtx=null,playing=false,timers=[];
+
+for(let n=0;n<60;n++){let s=document.createElement("span");s.className="star";s.style.left=Math.random()*100+"%";s.style.top=Math.random()*100+"%";s.style.animationDelay=Math.random()*4+"s";document.getElementById("stars").appendChild(s)}
+
+function showLine(){
+ i++;
+ if(i>=poema.length){line.textContent="Fin.";line.className="fade";next.textContent="↻ Repetir";i=-1;progress.style.width="100%";return}
+ line.className="";void line.offsetWidth;line.className="fade";line.textContent=poema[i];
+ progress.style.width=((i+1)/poema.length*100)+"%";
+ next.textContent="Siguiente →";
+}
+
+/* Música instrumental suave generada en el navegador */
+function startMusic(){
+ if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+ audioCtx.resume(); playing=true; musicBtn.textContent="♫ Música";
+ const chords=[
+  [196,246.94,293.66],[174.61,220,261.63],[146.83,196,246.94],[164.81,207.65,246.94]
+ ];
+ let step=0;
+ function chord(){
+  if(!playing)return;
+  const notes=chords[step++%chords.length];
+  notes.forEach((freq,j)=>{
+   const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+   o.type=j===1?"sine":"triangle";o.frequency.value=freq;
+   const now=audioCtx.currentTime;
+   g.gain.setValueAtTime(0,now);
+   g.gain.linearRampToValueAtTime(.035,now+1.2);
+   g.gain.linearRampToValueAtTime(.018,now+3.5);
+   g.gain.exponentialRampToValueAtTime(.001,now+5.8);
+   o.connect(g);g.connect(audioCtx.destination);o.start(now);o.stop(now+6);
+  });
+  timers.push(setTimeout(chord,4200));
+ }
+ chord();
+}
+function stopMusic(){playing=false;timers.forEach(clearTimeout);timers=[];if(audioCtx)audioCtx.suspend();}
+
+start.onclick=()=>{start.style.display="none";next.style.display="inline-block";musicBtn.style.display="inline-block";startMusic();showLine()};
+next.onclick=()=>showLine();
+musicBtn.onclick=()=>{if(playing){stopMusic();musicBtn.textContent="♫ Música apagada"}else{startMusic()}};
+</script>
+</body>
+</html>
